@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>Super Bro Maker</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+@font-face {
+  font-family: 'Pixel';
+  /* fallback to system monospace if no web font */
+}
+
+body {
+  font-family: 'Courier New', Courier, monospace;
+  font-weight: 900;
+  background: linear-gradient(160deg, #1a1a2e, #0f3460);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 20px 12px 40px;
+}
+
+.container {
+  width: 100%;
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.title {
+  font-size: clamp(16px, 5vw, 24px);
+  color: #fff;
+  text-align: center;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  text-shadow: 3px 3px 0 #e74c3c, 5px 5px 0 #922b21, 7px 7px 0 rgba(0,0,0,0.4);
+  line-height: 1.5;
+}
+
+.stage {
+  background: repeating-conic-gradient(#2a2a3e 0% 25%, #1e1e30 0% 50%) 0 0 / 16px 16px;
+  border: 3px solid #e74c3c;
+  border-radius: 16px;
+  padding: 28px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  box-shadow: 0 0 30px rgba(231,76,60,0.3);
+}
+
+#spriteCanvas {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  width: 192px;
+  height: auto;
+  display: block;
+  cursor: pointer;
+}
+
+#toast {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(0,0,0,0.85);
+  color: #ffe066;
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 1px;
+  padding: 10px 20px;
+  border-radius: 30px;
+  border: 2px solid rgba(255,224,102,0.3);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  white-space: nowrap;
+  z-index: 999;
+}
+
+#toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#copyHint {
+  font-size: 8px;
+  color: rgba(255,255,255,0.25);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-top: -8px;
+}
+
+#broName {
+  font-size: clamp(13px, 4vw, 18px);
+  font-family: inherit;
+  font-weight: 900;
+  color: #ffe066;
+  text-shadow: 2px 2px 0 #b8860b;
+  text-align: center;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  border-bottom: 2px dashed rgba(255,224,102,0.4);
+  outline: none;
+  width: 100%;
+  padding: 4px 8px;
+  caret-color: #ffe066;
+}
+#broName::selection { background: rgba(255,224,102,0.3); }
+
+.controls {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.control-card {
+  background: rgba(255,255,255,0.06);
+  border: 2px solid rgba(255,255,255,0.15);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.control-card-label {
+  font-size: 9px;
+  color: rgba(255,255,255,0.45);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.type-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.type-btn {
+  flex: 1;
+  padding: 13px 4px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 10px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(255,255,255,0.18);
+  border-radius: 8px;
+  cursor: pointer;
+  color: rgba(255,255,255,0.6);
+  transition: all 0.12s;
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+.type-btn:active { opacity: 0.7; }
+
+.type-btn.selected {
+  background: #e74c3c;
+  border-color: #ff6b5b;
+  color: #fff;
+  box-shadow: 0 3px 0 #922b21, 0 0 12px rgba(231,76,60,0.5);
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  width: 100%;
+}
+
+.action-btn {
+  padding: 16px 6px 12px;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: clamp(8px, 2.2vw, 10px);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: transform 0.1s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.action-btn .icon { font-size: 22px; }
+
+.action-btn:active { transform: translateY(3px); box-shadow: none !important; }
+
+.recolor-btn { background: #9b59b6; color: #fff; box-shadow: 0 4px 0 #6c3483; }
+.shuffle-btn { background: #f39c12; color: #fff; box-shadow: 0 4px 0 #b7770d; }
+.save-btn    { background: #27ae60; color: #fff; box-shadow: 0 4px 0 #1a7a42; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1 class="title">SUPER<br>BRO MAKER</h1>
+
+  <div class="stage">
+    <canvas id="spriteCanvas"></canvas>
+    <div id="copyHint">tap to copy</div>
+    <input id="broName" type="text" value="..." autocomplete="off" spellcheck="false">
+  </div>
+
+  <div class="controls">
+    <div class="control-card">
+      <span class="control-card-label">Head</span>
+      <div class="type-buttons">
+        <button class="type-btn" data-group="head" data-val="weird">Weird</button>
+        <button class="type-btn" data-group="head" data-val="big">Big</button>
+        <button class="type-btn" data-group="head" data-val="small">Small</button>
+      </div>
+    </div>
+    <div class="control-card">
+      <span class="control-card-label">Body</span>
+      <div class="type-buttons">
+        <button class="type-btn" data-group="body" data-val="weird">Weird</button>
+        <button class="type-btn" data-group="body" data-val="big">Big</button>
+        <button class="type-btn" data-group="body" data-val="small">Small</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="action-buttons">
+    <button class="action-btn recolor-btn" id="recolorBtn"><span class="icon">🎨</span>Recolor</button>
+    <button class="action-btn shuffle-btn" id="shuffleBtn"><span class="icon">🎲</span>Shuffle</button>
+    <button class="action-btn save-btn"    id="saveBtn"><span class="icon">💾</span>Save PNG</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  // ── Data ────────────────────────────────────────────────────
+  const IMG_SRC = {
+    'head-weird': 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAgAEADASIAAhEBAxEB/8QAGgAAAwEAAwAAAAAAAAAAAAAAAAcIBgEEBf/EADMQAAECBAQEAwYHAQAAAAAAAAECAwAEERIFBgchExQxYUFRoQgVFiIkQyMyQkVxkqLC/8QAFwEBAQEBAAAAAAAAAAAAAAAABgUAB//EACoRAAEDAwIEBQUAAAAAAAAAAAECAxEABAUxQRITFCEiUWGRsQZCYnGh/9oADAMBAAIRAxEAPwCMoIII1atJkHLLeasSfkTiCpNxprjJPA4gUkKAP6hQ/MPPx8t6JQlKEJQkBKUigAHQeQEZ72bNKJyZenMdm8YlmUOSbIYbaaLhUl03EqJttIsSKCtanpTdk5Ny18Rc39dyvL2favuur3FKU9YDZq66h/hSqUj53p99M5ROLZ7MypepnUDTt6TWZjG6iZLXmt6TcbxBMoZZK0kFq+6tO46UiuaCv5RC+0b/AHU03/B/7ibburt3A42YIpDkc6zetdM+xKVflGnfYVLMxpMGEXOZjaBpW0y25/gX7wsIpHFfZXflZB6Zl87IeU0krKF4YUAgCp3Dp37Uib6GlaQ6x9wHQoB3jj0iK5vlg0Cnl2/K1+4qn30iuIIIIo1IqxdLszDK2BsMOSiX3HpWXSU8cItKEkeRr19I2KtMylRSrGiCDuOUoQf7xBMXL7Oeohz5lmYZ9zDDUYMliVSRNcbi/IRWloKaBI86126QKyOHXbJ5iTxDfaP731pDj7tD6w04P1TT69oTmcsy/EXKfRcry9/3b7rqdhSlPWHEdxGF1k1Ik9NcHk8RnMNfnxNvFltDTqUEKCbt6+G3UdolsMLfWG2xJqveEJb4lKgCuurUs0NMDqfAc31/xElaw6iN59VhaUZcksF93cZJTKqqly+zwtHSz1j1tddYDqW1hbDGCLwlEgp1RUZvil28I2NEppS3vWvhSFTCrFYjkEPPDx7Dy1HnBke1Gr+/U94AZT81/9k=',
+    'body-weird': 'data:image/png;base64,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',
+    'head-big':   'data:image/png;base64,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',
+    'body-big':   'data:image/png;base64,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',
+    'head-small': 'data:image/png;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/4gHYSUNDX1BST0ZJTEUAAQEAAAHIAAAAAAQwAABtbnRyUkdCIFhZWiAH4AABAAEAAAAAAABhY3NwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAA9tYAAQAAAADTLQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAlkZXNjAAAA8AAAACRyWFlaAAABFAAAABRnWFlaAAABKAAAABRiWFlaAAABPAAAABR3dHB0AAABUAAAABRyVFJDAAABZAAAAChnVFJDAAABZAAAAChiVFJDAAABZAAAAChjcHJ0AAABjAAAADxtbHVjAAAAAAAAAAEAAAAMZW5VUwAAAAgAAAAcAHMAUgBHAEJYWVogAAAAAAAAb6IAADj1AAADkFhZWiAAAAAAAABimQAAt4UAABjaWFlaIAAAAAAAACSgAAAPhAAAts9YWVogAAAAAAAA9tYAAQAAAADTLXBhcmEAAAAAAAQAAAACZmYAAPKnAAANWQAAE9AAAApbAAAAAAAAAABtbHVjAAAAAAAAAAEAAAAMZW5VUwAAACAAAAAcAEcAbwBvAGcAbABlACAASQBuAGMALgAgADIAMAAxADb/2wBDAAUDBAQEAwUEBAQFBQUGBwwIBwcHBw8LCwkMEQ8SEhEPERETFhwXExQaFRERGCEYGh0dHx8fExciJCIeJBweHx7/2wBDAQUFBQcGBw4ICA4eFBEUHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh4eHh7/wAARCAAcAEADASIAAhEBAxEB/8QAGQAAAwEBAQAAAAAAAAAAAAAAAAcIBgQF/8QANhAAAQEFBgMFBQkAAAAAAAAAAQIAAwQREgUGBxMUIUFhoRUWJDFDCFFikcIiMkJEU2NxkuP/xAAZAQACAwEAAAAAAAAAAAAAAAAEBgACBwP/xAArEQABAwMDAgMJAAAAAAAAAAACAQMRAAQSBSExE1EUQWEiI1JicZGhsdH/2gAMAwEAAhEDEQA/AIyYYb3LnXYjr0Rj6EgH0M6eOneYS/UQkiYHAHfdqOug0KmawiVYAI1xHmmnhbc7sh2q1H0U4i3UdDO1Ok5UikGSvMz9/Bt6h06SZpdoSfeAA2gt+6Hc+zbLghaWvGTlV5GV9wJE5VK85zkzKuddkXe1c43Vaij0qKaZ8zOc+jZxdPHcuq4azP6rV9J18LFkbVpiET5vNd6ScQ5Q+cvHawJLSUky4Mrk4Ng7m8apcoD/AEanMYwB2VL976G5MdMJk4nixx28bH7Mz/yefmZmX8aJSyx/M2K025Ng8EcwFeVifxQms6nb6mnvrbMg49pU554qQcQ7m90jAjtExmqzNi4y6KafiM51dGybMfG7C15hnF2bDrttNqmPS8UmmFLqgIpG/wBpXnV0ZcM72bqOsiaHl6xE79qzy+w65YN4J8MzG3dfvQzS9nuHrtG14r9Jw7R/Yk/SytYaXlv4lkmpifOuLLvScQ4mKvFzEQ+JS1pcv3UAqzJVBKw/Ks33yppll8+Plx0tzrtd3dX47U6ij0qKaZ8zOc+jTx7DTp2bdvO/KQXiIVwlKuIBWokfNI+TVSGQ7u38NcEyizEb/VE/tN1gaPto+qb1nb5Xl7u6TwWq1Ffq0U0y5Gc59GX1zby93dX4HVaij1aKaZ8jOc+jOL8RYUTTswqpvRDrJkWSFxSExbxoN30Wcp5c+HitUl8EvH0QKnUgndBo28+gaRFGpRO+5nu3RaVSY6Id1qUlD1QEzzbmZ+07TwsghNyXle/MbT60mXNydweRV//Z',
+    'body-small': 'data:image/png;base64,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',
+  };
+
+  const BASE_NAMES = [
+    'Brak','Grub','Zop','Krev','Drex','Plom','Snak','Grym','Blax','Crub',
+    'Drev','Flon','Hrix','Klev','Mrag','Plex','Skiv','Trum','Vrox','Wrek',
+    'Brox','Glub','Zrik','Krag','Plux','Snev','Blix','Crud','Drak','Frum',
+    'Klob','Skag','Triv','Brug','Glex','Zram','Krob','Drix','Plev','Snag',
+    'Grum','Blok','Crev','Drab','Frix','Klov','Skov','Trad','Vrob','Brem',
+    'Glax','Zrob','Krix','Plag','Snux','Grav','Bluf','Crak','Driv','Flab',
+    'Klux','Trix','Vrag','Brup','Glev','Zrub','Klog','Drem','Plix','Snog',
+    'Bliv','Crob','Drax','Flob','Klam','Skev','Trab','Vrix','Brob','Glum',
+    'Zrak','Drig','Plob','Sniv','Grag','Blox','Crum','Brog','Grik','Plax',
+    'Snob','Krum','Blev','Grox','Zlov','Brix','Skrum','Drob','Flek','Krux',
+  ];
+
+  const COLOR_HUES = Array.from({length: 100}, (_, i) => (i * 37) % 360);
+
+  // ── State ───────────────────────────────────────────────────
+  let headType  = 'weird';
+  let bodyType  = 'weird';
+  let nameIndex = 0;
+  let colorIndex = 0;
+  let suffix    = 'uigi';   // randomized each reroll
+  let waPrefix  = false;    // ~20% chance
+  const loadedImgs = {};
+
+  // ── Load images ─────────────────────────────────────────────
+  let loadedCount = 0;
+  const totalImgs = Object.keys(IMG_SRC).length;
+
+  Object.entries(IMG_SRC).forEach(([key, src]) => {
+    const img = new Image();
+    img.onload = () => {
+      loadedImgs[key] = img;
+      loadedCount++;
+      if (loadedCount === totalImgs) {
+        rerollName();
+        setNameDisplay();
+        render();
+      }
+    };
+    img.src = src;
+  });
+
+  // ── Recolor ─────────────────────────────────────────────────
+  function recolorImage(img, hue) {
+    const c = document.createElement('canvas');
+    c.width = img.width; c.height = img.height;
+    const ctx = c.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    const id = ctx.getImageData(0, 0, c.width, c.height);
+    const d = id.data;
+
+    function hue2rgb(p, q, t) {
+      if (t < 0) t += 1; if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q-p)*6*t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q-p)*(2/3-t)*6;
+      return p;
+    }
+
+    const hNorm = (hue / 360) % 1;
+
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i+3] === 0) continue;
+      const r = d[i]/255, g = d[i+1]/255, b = d[i+2]/255;
+      const max = Math.max(r,g,b), min = Math.min(r,g,b);
+      let s, l = (max+min)/2;
+      if (max === min) { s = 0; } else {
+        const dd = max-min;
+        s = l > 0.5 ? dd/(2-max-min) : dd/(max+min);
+      }
+      // replace hue entirely, keep saturation and lightness
+      let r2, g2, b2;
+      if (s === 0) { r2=g2=b2=l; } else {
+        const q = l < 0.5 ? l*(1+s) : l+s-l*s;
+        const p = 2*l-q;
+        r2 = hue2rgb(p,q,hNorm+1/3);
+        g2 = hue2rgb(p,q,hNorm);
+        b2 = hue2rgb(p,q,hNorm-1/3);
+      }
+      d[i]=r2*255; d[i+1]=g2*255; d[i+2]=b2*255;
+    }
+    ctx.putImageData(id, 0, 0);
+    return c;
+  }
+
+  // ── Name logic ──────────────────────────────────────────────
+  function rerollName() {
+    nameIndex = Math.floor(Math.random() * BASE_NAMES.length);
+    suffix    = Math.random() < 0.5 ? 'io' : 'uigi';
+    waPrefix  = Math.random() < 0.05;
+  }
+
+  function generateName() {
+    const hue = COLOR_HUES[colorIndex];
+    const isPurple = hue >= 260 && hue <= 320;
+    const useWa = isPurple || waPrefix;
+    let name = (useWa ? 'Wa' : '') + BASE_NAMES[nameIndex] + suffix;
+    if (bodyType === 'small') name = 'Baby ' + name;
+    return name;
+  }
+
+  function setNameDisplay() {
+    document.getElementById('broName').value = generateName();
+  }
+
+  // ── Render ───────────────────────────────────────────────────
+  function render() {
+    if (Object.keys(loadedImgs).length < totalImgs) return;
+
+    const headImg = loadedImgs['head-' + headType];
+    const bodyImg = loadedImgs['body-' + bodyType];
+    const hue = COLOR_HUES[colorIndex];
+
+    const headC = recolorImage(headImg, hue);
+    const bodyC = recolorImage(bodyImg, hue);
+
+    const canvas = document.getElementById('spriteCanvas');
+    const maxW = Math.max(headC.width, bodyC.width);
+    canvas.width  = maxW;
+    canvas.height = headC.height + bodyC.height;
+
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(headC, (maxW - headC.width)  / 2, 0);
+    ctx.drawImage(bodyC, (maxW - bodyC.width)  / 2, headC.height);
+
+    // Sync button selected states
+    document.querySelectorAll('.type-btn').forEach(btn => {
+      const group = btn.dataset.group;
+      const val   = btn.dataset.val;
+      btn.classList.toggle('selected', (group === 'head' ? headType : bodyType) === val);
+    });
+  }
+
+  // ── Events ───────────────────────────────────────────────────
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (btn.dataset.group === 'head') headType = btn.dataset.val;
+      else bodyType = btn.dataset.val;
+      rerollName();
+      setNameDisplay();
+      render();
+    });
+  });
+
+  document.getElementById('recolorBtn').addEventListener('click', () => {
+    colorIndex = Math.floor(Math.random() * COLOR_HUES.length);
+    rerollName();
+    setNameDisplay();
+    render();
+  });
+
+  document.getElementById('shuffleBtn').addEventListener('click', () => {
+    const types = ['weird','big','small'];
+    headType   = types[Math.floor(Math.random()*3)];
+    bodyType   = types[Math.floor(Math.random()*3)];
+    colorIndex = Math.floor(Math.random()*COLOR_HUES.length);
+    rerollName();
+    setNameDisplay();
+    render();
+  });
+
+  document.getElementById('saveBtn').addEventListener('click', () => {
+    const canvas = document.getElementById('spriteCanvas');
+    const dataUrl = canvas.toDataURL('image/png');
+    // Scale up 4x for a crisp saved image
+    const big = document.createElement('canvas');
+    big.width  = canvas.width  * 4;
+    big.height = canvas.height * 4;
+    const bCtx = big.getContext('2d');
+    bCtx.imageSmoothingEnabled = false;
+    bCtx.drawImage(canvas, 0, 0, big.width, big.height);
+    const bigUrl = big.toDataURL('image/png');
+    const name = document.getElementById('broName').value.trim().replace(/ /g, '-') || 'bro';
+    const a = document.createElement('a');
+    a.href = bigUrl;
+    a.download = name + '.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    // Fallback: open in new tab (works on iOS where download attr is ignored)
+    setTimeout(() => window.open(bigUrl, '_blank'), 100);
+  });
+
+  // ── Tap canvas to copy ───────────────────────────────────────
+  document.getElementById('spriteCanvas').addEventListener('click', () => {
+    const canvas = document.getElementById('spriteCanvas');
+    const big = document.createElement('canvas');
+    big.width  = canvas.width  * 4;
+    big.height = canvas.height * 4;
+    const bCtx = big.getContext('2d');
+    bCtx.imageSmoothingEnabled = false;
+    bCtx.drawImage(canvas, 0, 0, big.width, big.height);
+
+    big.toBlob(blob => {
+      try {
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })])
+          .then(() => showToast('📋 Copied!'))
+          .catch(() => showToast('⚠️ Copy not supported'));
+      } catch(e) {
+        showToast('⚠️ Copy not supported');
+      }
+    }, 'image/png');
+  });
+
+  function showToast(msg) {
+    let t = document.getElementById('toast');
+    if (!t) {
+      t = document.createElement('div');
+      t.id = 'toast';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg;
+    t.classList.add('show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(() => t.classList.remove('show'), 1800);
+  }
+
+  // Initial selected state
+  document.querySelectorAll('.type-btn').forEach(btn => {
+    btn.classList.toggle('selected',
+      (btn.dataset.group === 'head' ? headType : bodyType) === btn.dataset.val);
+  });
+
+})();
+</script>
+</body>
+</html>
